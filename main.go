@@ -18,15 +18,20 @@ func main() {
 	if len(os.Args) == 2 {
 		CONN_PORT = os.Args[1]
 	}
+
 	listener, err := net.Listen("tcp", "localhost:"+CONN_PORT)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer listener.Close()
 	fmt.Println("Listening on the port :" + CONN_PORT)
+
 	Clients := make(map[net.Conn]string)
 
 	for {
+		if len(Clients) == 10 {
+			continue
+		}
 		Conn, err := listener.Accept()
 
 		if err != nil {
