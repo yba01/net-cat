@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 )
+var allprevmsg string
 
 func ChatReadMessage(conn net.Conn, Chats map[net.Conn]string, msg chan string) {
 	defer conn.Close()
@@ -16,12 +17,13 @@ func ChatReadMessage(conn net.Conn, Chats map[net.Conn]string, msg chan string) 
 	for {
 		n, err := conn.Read(Mess)
 		if err != nil {
-			msg <- string([]byte(Chats[conn] + " has left our chat...\n"))
+			msg <- string([]byte(Chats[conn] + " has left our chat..."))
 			break
 		}
 		Message = append(Message, Mess[:n]...)
 		if string(Message) != "\n" {
-			msg <- string([]byte("["+time.Now().String()[:19]+"]"+"[" + Chats[conn]+ "]:" + string(Message)))
+			msg <- string([]byte("["+time.Now().String()[:19]+"]"+"[" + Chats[conn]+ "]:" + string(Message)[:len(Message)-1]))
+			allprevmsg += string([]byte("["+time.Now().String()[:19]+"]"+"[" + Chats[conn]+ "]:" + string(Message)[:len(Message)-1] + "\n"))
 		}
 		Message = nil
 		conn.Write([]byte("["+time.Now().String()[:19]+"]"+"[" + Chats[conn]+ "]:"))
@@ -30,11 +32,13 @@ func ChatReadMessage(conn net.Conn, Chats map[net.Conn]string, msg chan string) 
 }
 
 func ChatWriteMessage(connec net.Conn, Chats map[net.Conn]string, msg chan string) {
+	defer connec.Close()
+
 	for {
 		chatting := <-msg
 		for conn := range Chats {
 			if connec != conn {
-				conn.Write([]byte("\n" + chatting))
+				conn.Write([]byte("\n" + chatting + "\n"))
 				conn.Write([]byte("["+time.Now().String()[:19]+"]"+"["+Chats[conn]+"]:"))
 			}
 		}
@@ -77,6 +81,7 @@ func GiveName(Conn net.Conn, Clients map[net.Conn]string) string {
 			break
 		}
 	}
+	Conn.Write([]byte(allprevmsg))
 	Conn.Write([]byte("["+time.Now().String()[:19]+"]"+"["+nameclient+"]:"))
 	return nameclient
 }
